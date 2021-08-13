@@ -4,10 +4,11 @@ from flask import Flask, request, make_response, abort, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
 import json
 from datetime import datetime
-
-# our database uri
+from achive_cache import AchiveCatche
 
 # -----------------------------------------------------------------------------
+
+# our database uri
 
 username = "postgres"
 password = "111"
@@ -24,6 +25,9 @@ app.config["GLOBAL_CACHE_BUFFER"] = 4
 
 db = SQLAlchemy(app)
 
+# cache activation
+
+cache = AchiveCatche(app.config["GLOBAL_CACHE_BUFFER"])
 
 # -----------------------------------------------------------------------------
 
@@ -54,85 +58,12 @@ def request_query_builder(asin, page):
             'product_title' : product.title,
             str(page) : page_json(page_request),
             'state' : True,
+            'date' : datetime.now()
         }   
 
     return data
 
-
 # -----------------------------------------------------------------------------
-# Cache classs
-
-class AchiveCatche:
-
-    def __init__(self):
-        self.global_cash = {}
-        self.time_store = {}
-
-    def __repr__(self):
-        return self.global_cash
-
-
-    def add_to_cache(self, asin, page, data):
-
-        if len(self.time_store) > app.config["GLOBAL_CACHE_BUFFER"]:
-            del_cache_by_size()
-
-        if asin in self.global_cash:
-            if page not in self.global_cash[asin]:
-                pass
-            else:
-                return
-        else:
-            self.global_cash[asin] = {}
-
-        self.global_cash[asin][page] = data
-        self.time_store[datetime.now()] = asin + str(page)
-
-        return
-
-
-    def check_available(self, asin, page):
-
-        if asin in self.global_cash:
-            if page in self.global_cash[asin]:
-                return True
-            else:
-                return False
-        else:
-            return False
-
-
-    def get_from_cache(self, asin, page):
-
-        return self.global_cash[asin][page]
-
-
-    def del_chain_asin(self, asin):
-
-        if asin in self.global_cash:
-            del self.global_cash[asin]
-
-        return
-
-
-    def del_cache_by_size(self):
-
-        # Get the row which was wrote the first
-        sorted_time = sorted(self.time_store)
-        first_row = self.time_store[sorted_time[0]]
-
-        del self.time_store[sorted_time[0]]
-
-        asin = sorted_time[:10]
-        page = sorted_time[10:]
-
-        del self.global_cash[asin][page]
-
-        return
-
-
-
-cache = AchiveCatche()
 
 # Error handlers
 
@@ -152,6 +83,12 @@ def page_not_found(errorhandler):
 def method_not_allowed():
 
     return make_response(jsonify({'error': 'Method Not Allowed'}), 405)
+
+@app.errorhandler(406)
+def wrong_fields():
+
+    return make_response(jsonify({'Not Acceptable 406': 'Wrong fields\
+        of request or empty requests json'}), 406)
 
 # -----------------------------------------------------------------------------
 
@@ -217,11 +154,12 @@ def index(asin, page):
 
     # Cache processing
 
-    # if len(global_cash) > app.config["GLOBAL_CACHE_BUFFER"]:
     if cache.check_available(asin, page):
+
         return jsonify(cache.get_from_cache(asin, page))
 
     else:
+
         data = request_query_builder(asin, page)
         cache.add_to_cache(asin, page, data)
         return jsonify(data)
@@ -230,33 +168,55 @@ def index(asin, page):
         
 @app.route('/todo/api/v1.1/reviewadd', methods=['PUT'])
 def put_review():
+    """
+    Route for review adding to database
+    contains main check tests of availibility of fields json
+    """
 
     if not request.json:
-        abort(400)
+
+        # fail if empty requests json
+
+        return wrong_fields()
 
     if 'asin' not in request.json or type(request.json['asin']) != str or\
             len(request.json['asin']) != 10:
-        abort(400)
+
+        # fail if wrong fields
+
+        return wrong_fields()
 
     product = Products.query.get_or_404(request.json['asin'])
 
     if 'title' not in request.json or type(request.json['title']) != str or\
             len(request.json['title']) > 1000:
-        abort(400)
+
+        # fail if wrong fields
+
+        return wrong_fields()
 
     if 'review' not in request.json or type(request.json['review']) != str or\
             len(request.json['review']) > 10000:
-        abort(400)
 
+        # fail if wrong fields
+
+        return wrong_fields()
+
+
+    # databae new object creating
 
     new_review = Reviews(asin=product.asin, title=request.json['title'],\
             review=request.json['review'])
 
     try:
 
+        # wrote to db
+
         db.session.add(new_review)
         db.session.commit()
         cache.del_chain_asin(request.json['asin'])
+
+        # Success answer
 
         return jsonify({
             'Success' : True,
@@ -264,6 +224,7 @@ def put_review():
             })
 
     except Exception:
+
         return method_not_allowed()
 
 # -----------------------------------------------------------------------------
