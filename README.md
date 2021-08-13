@@ -18,7 +18,7 @@ For Windows - while using curl command, in json body place slash before "
 
 #--------------------------------------------------------------------------------------------------------
 
--- All code setting are based at top of code:
+** All code setting are based at top of code:
 
 
 - SQLALCHEMY_DATABASE_URI	- >	set database
@@ -27,7 +27,15 @@ For Windows - while using curl command, in json body place slash before "
 
 #--------------------------------------------------------------------------------------------------------
 
-Using PostgreSQL V.13
+** Using PostgreSQL V.13 psql commands for create DB:
+
+> CREATE TABLE Products (Title VARCHAR(300) NOT NULL,Asin VARCHAR(10) NOT NULL PRIMARY KEY);
+
+> \copy Products FROM 'C:\Users\Wrong_Way\Desktop\G1\testdb\Products.csv' DELIMITER ',' CSV;
+
+> CREATE TABLE Reviews (id SERIAL PRIMARY KEY, asin VARCHAR(10), Title VARCHAR(1000) NOT NULL, Review VARCHAR(10000) NOT NULL, FOREIGN KEY (asin) REFERENCES Products (asin) ON DELETE CASCADE ON UPDATE CASCADE);
+
+> \copy Reviews(asin, title, review) FROM 'C:\Users\Wrong_Way\Desktop\G1\testdb\Reviews.csv' DELIMITER ',' CSV HEADER;
 
 #--------------------------------------------------------------------------------------------------------
 

@@ -79,6 +79,41 @@ def request_query_builder(asin, page):
 
     return data
 
+def checking_module(request):
+
+    """
+    Function provides all checks
+    """
+
+    if not request.json:
+
+        # fail if empty requests json
+
+        return wrong_fields()
+
+    if 'asin' not in request.json or type(request.json['asin']) != str or\
+            len(request.json['asin']) != 10:
+
+        # fail if no 'asin' or it`s different from str or lenth of key asin is not 10
+
+        return wrong_fields()
+
+    product = Products.query.get_or_404(request.json['asin'])
+
+    if 'title' not in request.json or type(request.json['title']) != str or\
+            len(request.json['title']) > 1000:
+
+        # fail if no 'title' or it`s different from str or lenth of title > 1000
+
+        return wrong_fields()
+
+    if 'review' not in request.json or type(request.json['review']) != str or\
+            len(request.json['review']) > 10000:
+
+        # fail if no 'review' or it`s different from str or lenth of review > 10000
+
+        return wrong_fields()
+
 # -----------------------------------------------------------------------------
 
 # Error handlers
@@ -196,35 +231,7 @@ def put_review():
     contains main check tests of availibility of fields json
     """
 
-    if not request.json:
-
-        # fail if empty requests json
-
-        return wrong_fields()
-
-    if 'asin' not in request.json or type(request.json['asin']) != str or\
-            len(request.json['asin']) != 10:
-
-        # fail if no 'asin' or it`s different from str or lenth of key asin is not 10
-
-        return wrong_fields()
-
-    product = Products.query.get_or_404(request.json['asin'])
-
-    if 'title' not in request.json or type(request.json['title']) != str or\
-            len(request.json['title']) > 1000:
-
-        # fail if no 'title' or it`s different from str or lenth of title > 1000
-
-        return wrong_fields()
-
-    if 'review' not in request.json or type(request.json['review']) != str or\
-            len(request.json['review']) > 10000:
-
-        # fail if no 'review' or it`s different from str or lenth of review > 10000
-
-        return wrong_fields()
-
+    checking_module(request)
 
     # databae new object creating
 
@@ -254,4 +261,4 @@ def put_review():
 
 if __name__ == '__main__':
 
-    app.run(host = '127.0.0.1', debug=True, port = 1110, ssl_context='adhoc')
+    app.run(host = '127.0.0.1', debug=True, port = 1110) # ssl_context='adhoc')
