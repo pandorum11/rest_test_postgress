@@ -20,7 +20,6 @@ For Windows - while using curl command, in json body place slash before "
 
 ** All code setting are based at top of code:
 
-
 - SQLALCHEMY_DATABASE_URI	- >	set database
 - PAGINATION_PAGE_LIM		- > set page/record quantity
 - GLOBAL_CACHE_BUFFER		- > set global buffer of cache
