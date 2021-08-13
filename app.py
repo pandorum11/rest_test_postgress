@@ -123,6 +123,8 @@ def checking_module(request):
 
         return wrong_fields()
 
+    return
+
 # -----------------------------------------------------------------------------
 
 # Error handlers
