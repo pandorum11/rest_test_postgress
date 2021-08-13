@@ -17,7 +17,9 @@ dbname = "G_sheets"
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "SECRETKEY"
 
-app.config["SQLALCHEMY_DATABASE_URI"] = f"postgresql://{username}:{password}@localhost:5432/{dbname}"
+app.config["SQLALCHEMY_DATABASE_URI"] =\
+            f"postgresql://{username}:{password}@localhost:5432/{dbname}"
+
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 app.config["PAGINATION_PAGE_LIM"] = 3
@@ -35,9 +37,21 @@ cache = AchiveCatche(app.config["GLOBAL_CACHE_BUFFER"])
 
 def page_json(page_request):
 
+    """
+    Making json from request, if there are repeating titles
+    they extends by prefix (number)_copy
+    """
+
     data = {}
+    i = 1
+
     for review in page_request:
-        data[review.title] = review.review
+
+        if review.title in data:
+            data[f'({i}_copy) {review.title}'] = review.review
+            i += 1
+        else:
+            data[review.title] = review.review
 
     return data
 
@@ -49,8 +63,10 @@ def request_query_builder(asin, page):
     """
 
     product = Products.query.filter(Products.asin == asin).first()
-    page_request = Reviews.query.filter(Reviews.asin == asin).\
-        paginate(page=page, per_page=app.config["PAGINATION_PAGE_LIM"]).items
+    page_request = Reviews.query.filter(asin == Reviews.asin).\
+        paginate(page, 3).items
+
+    print(page_request)
      
     #finalised product card for 
     data = {
@@ -92,11 +108,12 @@ def wrong_fields():
 
 # -----------------------------------------------------------------------------
 
-# database block
+# Database block
 
 class Products(db.Model):
+
     """
-    Table Reviews (for each product)
+    Class Table Reviews (for each product)
 
     title           asin
 
@@ -114,14 +131,17 @@ class Products(db.Model):
 
 
 class Reviews(db.Model):
+
     """
-    Table Reviews (for each review)
+    Class Table Reviews (for each review)
 
     id      asin        title           review
 
     Integer String(10)  String(1000)    db.String(10000)
 
     for this table 'id' - primary key
+
+    asin - > foreign key Products.asin
     """
 
     __tablename__ = 'reviews'
@@ -143,7 +163,7 @@ class Reviews(db.Model):
 
 # -----------------------------------------------------------------------------
 
-# routes block
+# Routes block
 
 @app.route('/todo/api/v1.1/<asin>/<int:page>', methods=['GET'])
 def index(asin, page):
@@ -155,11 +175,13 @@ def index(asin, page):
     # Cache processing
 
     if cache.check_available(asin, page):
+        print(cache.global_cash)
 
         return jsonify(cache.get_from_cache(asin, page))
 
     else:
 
+        print(cache.global_cash)
         data = request_query_builder(asin, page)
         cache.add_to_cache(asin, page, data)
         return jsonify(data)
@@ -168,6 +190,7 @@ def index(asin, page):
         
 @app.route('/todo/api/v1.1/reviewadd', methods=['PUT'])
 def put_review():
+
     """
     Route for review adding to database
     contains main check tests of availibility of fields json
@@ -182,7 +205,7 @@ def put_review():
     if 'asin' not in request.json or type(request.json['asin']) != str or\
             len(request.json['asin']) != 10:
 
-        # fail if wrong fields
+        # fail if no 'asin' or it`s different from str or lenth of key asin is not 10
 
         return wrong_fields()
 
@@ -191,14 +214,14 @@ def put_review():
     if 'title' not in request.json or type(request.json['title']) != str or\
             len(request.json['title']) > 1000:
 
-        # fail if wrong fields
+        # fail if no 'title' or it`s different from str or lenth of title > 1000
 
         return wrong_fields()
 
     if 'review' not in request.json or type(request.json['review']) != str or\
             len(request.json['review']) > 10000:
 
-        # fail if wrong fields
+        # fail if no 'review' or it`s different from str or lenth of review > 10000
 
         return wrong_fields()
 
@@ -231,4 +254,4 @@ def put_review():
 
 if __name__ == '__main__':
 
-    app.run(host = '127.0.0.1', debug=True, port = 1110)
+    app.run(host = '127.0.0.1', debug=True, port = 1110, ssl_context='adhoc')
