@@ -4,7 +4,7 @@ from datetime import datetime
 
 # Cache operating classs
 
-class AchiveCatche:
+class AchiveCache:
 
     def __init__(self, buffer):
         self.cache_buffer = buffer

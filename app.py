@@ -4,7 +4,7 @@ from flask import Flask, request, make_response, abort, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
 import json
 from datetime import datetime
-from achive_cache import AchiveCatche
+from achive_cache import AchiveCache
 
 # -----------------------------------------------------------------------------
 
@@ -29,7 +29,7 @@ db = SQLAlchemy(app)
 
 # cache activation
 
-cache = AchiveCatche(app.config["GLOBAL_CACHE_BUFFER"])
+cache = AchiveCache(app.config["GLOBAL_CACHE_BUFFER"])
 
 # -----------------------------------------------------------------------------
 
