@@ -14,14 +14,16 @@ f"http://{yourhostname}/todo/api/v1.1/{product_asin}/{page}
 
 f"http://{yourhostname}/todo/api/v1.1/{reviewadd} -H "Content-Type: application/json" -d "{\"asin\":\"{product_asin}\", \"title\":\"{review_title}\",\"review\":\"{review}\"}"
 
+For Windows - while using curl command, in json body place slash before "
+
 #--------------------------------------------------------------------------------------------------------
 
-**All code setting are based at top of code:
+-- All code setting are based at top of code:
 
 
-- 1) SQLALCHEMY_DATABASE_URI	- >	set database
-- 2) PAGINATION_PAGE_LIM		- > set page/record quantity
-- 3) GLOBAL_CACHE_BUFFER		- > set global buffer of cache
+- SQLALCHEMY_DATABASE_URI	- >	set database
+- PAGINATION_PAGE_LIM		- > set page/record quantity
+- GLOBAL_CACHE_BUFFER		- > set global buffer of cache
 
 #--------------------------------------------------------------------------------------------------------
 
