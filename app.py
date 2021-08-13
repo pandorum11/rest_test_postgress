@@ -5,29 +5,39 @@ from flask_sqlalchemy import SQLAlchemy
 import json
 from datetime import datetime
 from achive_cache import AchiveCache
+import os
+
 
 # -----------------------------------------------------------------------------
 
-# our database uri
-
-username = "postgres"
-password = "111"
-dbname = "G_sheets"
-
 app = Flask(__name__)
-app.config['SECRET_KEY'] = "SECRETKEY"
 
+# -----------------------------------------------------------------------------
+
+# Settings block
+
+# USER SETTINGS
+
+username    = "**********"
+password    = "**********"
+dbname      = "**********"
+
+app.config["PAGINATION_PAGE_LIM"] = 3
+app.config["GLOBAL_CACHE_BUFFER"] = 4
+
+# -----------------------------------------------------------------------------
+
+app.config['SECRET_KEY'] = os.urandom(24)
+
+# database uri
 app.config["SQLALCHEMY_DATABASE_URI"] =\
             f"postgresql://{username}:{password}@localhost:5432/{dbname}"
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-app.config["PAGINATION_PAGE_LIM"] = 3
-app.config["GLOBAL_CACHE_BUFFER"] = 4
-
 db = SQLAlchemy(app)
 
-# cache activation
+# cache creating
 
 cache = AchiveCache(app.config["GLOBAL_CACHE_BUFFER"])
 
