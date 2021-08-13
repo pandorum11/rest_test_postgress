@@ -22,8 +22,8 @@ username    = "**********"
 password    = "**********"
 dbname      = "**********"
 
-app.config["PAGINATION_PAGE_LIM"] = 3
-app.config["GLOBAL_CACHE_BUFFER"] = 4
+app.config["PAGINATION_PAGE_LIM"] = 3  # pagination value page/records 3 default
+app.config["GLOBAL_CACHE_BUFFER"] = 4  # default value for cache buffer
 
 # -----------------------------------------------------------------------------
 
