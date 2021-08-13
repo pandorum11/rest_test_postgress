@@ -1,8 +1,7 @@
 #!Python
 
-from flask import Flask, request, make_response, abort, jsonify, render_template
+from flask import Flask, request, make_response, jsonify
 from flask_sqlalchemy import SQLAlchemy
-import json
 from datetime import datetime
 from achive_cache import AchiveCache
 import os
@@ -23,7 +22,7 @@ password    = "**********"
 dbname      = "**********"
 
 app.config["PAGINATION_PAGE_LIM"] = 3  # pagination value page/records 3 default
-app.config["GLOBAL_CACHE_BUFFER"] = 4  # default value for cache buffer
+app.config["GLOBAL_CACHE_BUFFER"] = 4  # default value for cache
 
 # -----------------------------------------------------------------------------
 
