@@ -6,15 +6,22 @@ from datetime import datetime
 
 class AchiveCache:
 
+    """
+    Cache base on dictionary rule, takes 1 arg - buffer size (int)
+    at constructor and uses next operations to process it :
+    destroy_cache_by_size()
+    add_to_cache()
+    check_available()
+    get_from_cache()
+    del_chain_asin()
+    asignment to cache throuh object
+    """
+
     def __init__(self, buffer):
 
         self.cache_buffer = buffer
         self.global_cash = {}
         self.time_store = {}
-
-    def __repr__(self):
-        
-        return self.global_cash
 
     def destroy_cache_by_size(self):
         """
