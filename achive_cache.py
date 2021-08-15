@@ -76,6 +76,10 @@ class AchiveCache:
                 # replacing time_store mark by new value, for tracking 
                 self.time_store[datetime.now()] = asin + str(page)
 
+
+                # refreshing date in record cache based
+                self.global_cash[asin][page]['date'] = datetime.now()
+
                 return
 
         else:
