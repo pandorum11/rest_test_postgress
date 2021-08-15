@@ -17,9 +17,9 @@ app = Flask(__name__)
 
 # USER SETTINGS
 
-username    = "**********"
-password    = "**********"
-dbname      = "**********"
+username    = "postgres"
+password    = "111"
+dbname      = "G_sheets"
 
 app.config["PAGINATION_PAGE_LIM"] = 3  # pagination value page/records 3 default
 app.config["GLOBAL_CACHE_BUFFER"] = 4  # default value for cache
@@ -44,7 +44,7 @@ cache = AchiveCache(app.config["GLOBAL_CACHE_BUFFER"])
 
 # support functionality
 
-def page_json(page_request):
+def page_json(page_request) -> dict:
 
     """
     Making json from request, if there are repeating titles
@@ -64,7 +64,7 @@ def page_json(page_request):
 
     return data
 
-def request_query_builder(asin, page):
+def request_query_builder(asin, page) -> dict:
 
     """
     Function builder of answer with pagination
@@ -75,8 +75,6 @@ def request_query_builder(asin, page):
 
     page_request = Reviews.query.filter(asin == Reviews.asin).\
         paginate(page, 3).items
-
-    print(page_request)
      
     #finalised product card for 
     data = {
@@ -89,7 +87,7 @@ def request_query_builder(asin, page):
 
     return data
 
-def checking_module(request):
+def checking_module(request) -> bool:
 
     """
     Function provides all checks
@@ -99,32 +97,35 @@ def checking_module(request):
 
         # fail if empty requests json
 
-        return False
+        return True
 
     if 'asin' not in request.json or type(request.json['asin']) != str or\
-            len(request.json['asin']) != 10:
+            len(request.json['asin']) != 10 or request.json['asin'] == '':
 
-        # fail if no 'asin' or it`s different from str or lenth of key asin is not 10
+        # fail if no 'asin' or it`s different from str
+        # or lenth of key asin is not 10 or empty json field
 
-        return False
+        return True
 
     product = Products.query.get_or_404(request.json['asin'])
 
     if 'title' not in request.json or type(request.json['title']) != str or\
-            len(request.json['title']) > 1000:
+            len(request.json['title']) > 1000 or request.json['title'] == '':
 
-        # fail if no 'title' or it`s different from str or lenth of title > 1000
+        # fail if no 'title' or it`s different from str
+        #  or lenth of title > 1000 or empty json field
 
-        return False
+        return True
 
     if 'review' not in request.json or type(request.json['review']) != str or\
-            len(request.json['review']) > 10000:
+            len(request.json['review']) > 10000 or request.json['review'] == '':
 
-        # fail if no 'review' or it`s different from str or lenth of review > 10000
+        # fail if no 'review' or it`s different from str
+        # or lenth of review > 10000 or empty json field
 
-        return False
+        return True
 
-    return True
+    return False
 
 # -----------------------------------------------------------------------------
 
@@ -224,17 +225,12 @@ def index(asin, page):
     if cache.check_available(asin, page):
 
         data = cache.get_from_cache(asin, page)
-        # cover date in response json
-        del data['date']
-        print(data)
-        
+            
     else:
 
         data = request_query_builder(asin, page)
         cache.add_to_cache(asin, page, data)
-        data_without_date = cache.get_from_cache(asin, page)['date']
-        # cover date in response json
-        del data['date']
+
 
     return jsonify(data)
         
@@ -248,9 +244,7 @@ def put_review():
     contains main check tests of availibility of fields json
     """
 
-    try:
-        checking_module(request)
-    except:
+    if checking_module(request):
        return wrong_fields()
 
     # databae new object creating
