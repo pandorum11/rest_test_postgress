@@ -34,6 +34,8 @@ app.config["SQLALCHEMY_DATABASE_URI"] =\
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+# Database initiating
+
 db = SQLAlchemy(app)
 
 # cache creating
@@ -232,7 +234,11 @@ def index(asin, page):
         cache.add_to_cache(asin, page, data)
 
 
-    return jsonify(data)
+    # removing service time field from responce
+    final = dict(data)
+    del final['date']
+
+    return jsonify(final)
         
 
         
