@@ -17,13 +17,9 @@ app = Flask(__name__)
 
 # USER SETTINGS
 
-username = "postgres"
-password = "111"
-dbname  = "G_sheets"
-
-# username    = "**********"
-# password    = "**********"
-# dbname      = "**********"
+username    = "**********"
+password    = "**********"
+dbname      = "**********"
 
 app.config["PAGINATION_PAGE_LIM"] = 3  # pagination value page/records 3 default
 app.config["GLOBAL_CACHE_BUFFER"] = 4  # default value for cache
@@ -102,14 +98,14 @@ def checking_module(request):
 
         # fail if empty requests json
 
-        return wrong_fields()
+        return False
 
     if 'asin' not in request.json or type(request.json['asin']) != str or\
             len(request.json['asin']) != 10:
 
         # fail if no 'asin' or it`s different from str or lenth of key asin is not 10
 
-        return wrong_fields()
+        return False
 
     product = Products.query.get_or_404(request.json['asin'])
 
@@ -118,16 +114,16 @@ def checking_module(request):
 
         # fail if no 'title' or it`s different from str or lenth of title > 1000
 
-        return wrong_fields()
+        return False
 
     if 'review' not in request.json or type(request.json['review']) != str or\
             len(request.json['review']) > 10000:
 
         # fail if no 'review' or it`s different from str or lenth of review > 10000
 
-        return wrong_fields()
+        return False
 
-    return
+    return True
 
 # -----------------------------------------------------------------------------
 
@@ -225,16 +221,21 @@ def index(asin, page):
     # Cache processing
 
     if cache.check_available(asin, page):
-        print(cache.global_cash)
 
-        return jsonify(cache.get_from_cache(asin, page))
-
+        data = cache.get_from_cache(asin, page)
+        # cover date in response json
+        del data['date']
+        print(data)
+        
     else:
 
-        print(cache.global_cash)
         data = request_query_builder(asin, page)
         cache.add_to_cache(asin, page, data)
-        return jsonify(data)
+        data_without_date = cache.get_from_cache(asin, page)['date']
+        # cover date in response json
+        del data['date']
+
+    return jsonify(data)
         
 
         
@@ -246,17 +247,17 @@ def put_review():
     contains main check tests of availibility of fields json
     """
 
-    checking_module(request)
+    if not checking_module(request):
+       return wrong_fields()
 
     # databae new object creating
 
-    new_review = Reviews(asin=product.asin, title=request.json['title'],\
+    new_review = Reviews(asin=request.json['asin'], title=request.json['title'],\
             review=request.json['review'])
 
     try:
 
         # wrote to db
-
         db.session.add(new_review)
         db.session.commit()
         cache.del_chain_asin(request.json['asin'])
@@ -265,7 +266,7 @@ def put_review():
 
         return jsonify({
             'Success' : True,
-            'For'     : product.asin
+            'For'     : request.json['asin']
             })
 
     except Exception:
