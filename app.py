@@ -72,6 +72,7 @@ def request_query_builder(asin, page):
     """
 
     product = Products.query.filter(Products.asin == asin).first()
+
     page_request = Reviews.query.filter(asin == Reviews.asin).\
         paginate(page, 3).items
 
@@ -247,7 +248,9 @@ def put_review():
     contains main check tests of availibility of fields json
     """
 
-    if not checking_module(request):
+    try:
+        checking_module(request)
+    except:
        return wrong_fields()
 
     # databae new object creating
