@@ -4,6 +4,7 @@ from datetime import datetime
 
 # Cache operating classs
 
+
 class AchiveCache:
 
     """
@@ -38,21 +39,20 @@ class AchiveCache:
         first_row = self.time_store[sorted_time[0]]
         # Then take and process value of time_store
         del self.time_store[sorted_time[0]]
-    
+
         asin = first_row[:10]
         page = first_row[10:]
 
         # and then delete it from global_cash also
 
         del self.global_cash[asin][int(page)]
-    
-        return
 
+        return
 
     def add_to_cache(self, asin, page, data):
 
         """
-        Function provides adding items to cache self.global_cash 
+        Function provides adding items to cache self.global_cash
         """
 
         # in case of time_store owerflow initiating destroing procedure
@@ -60,12 +60,10 @@ class AchiveCache:
         if len(self.time_store) > self.cache_buffer:
 
             self.destroy_cache_by_size()
-            
 
         if asin not in self.global_cash:
 
             self.global_cash[asin] = {}
-
 
         # asighning data to cache
         self.global_cash[asin][page] = data
@@ -75,11 +73,10 @@ class AchiveCache:
 
         return
 
-
     def check_available(self, asin, page) -> bool:
 
         """
-        Function chek availability of curent position in cash self.global_cash 
+        Function chek availability of curent position in cash self.global_cash
         """
 
         if asin in self.global_cash:
@@ -87,32 +84,32 @@ class AchiveCache:
             if page in self.global_cash[asin]:
 
                 return True
+                
             else:
 
                 return False
+
         else:
 
             return False
 
-
     def get_from_cache(self, asin, page):
 
-         # refreshing
+        # refreshing
 
         # deleting the time_store mark
         del self.time_store[self.global_cash[asin][page]['date']]
 
-        # replacing time_store mark by new value, for tracking self.global_cash 
-
+        # replacing time_store mark by new value, for tracking self.global_cash
         time = datetime.now()
         self.time_store[time] = asin + str(page)
 
+        # refreshing date in record based cache
+        del self.global_cash[asin][page]['date']
 
-        # refreshing date in record cache based
         self.global_cash[asin][page]['date'] = time
 
         return self.global_cash[asin][page]
-
 
     def del_chain_asin(self, asin):
 

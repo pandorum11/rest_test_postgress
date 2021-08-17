@@ -4,33 +4,51 @@ from flask import Flask, request, make_response, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from achive_cache import AchiveCache
-import os
+from dotenv import load_dotenv
+from os.path import join, dirname
+from os import urandom, environ
 
-
-# -----------------------------------------------------------------------------
-
-app = Flask(__name__)
 
 # -----------------------------------------------------------------------------
 
 # Settings block
 
+app = Flask(__name__)
+
+# -----------------------------------------------------------------------------
+
 # USER SETTINGS
 
-username    = "*********"
-password    = "*********"
-dbname      = "*********"
+# -----------------------------------------------------------------------------
 
-app.config["PAGINATION_PAGE_LIM"] = 3  # pagination value page/records 3 default
+app.config["PAGINATION_PAGE_LIM"] = 3  # pagination val page/records 3 default
 app.config["GLOBAL_CACHE_BUFFER"] = 4  # default value for cache
 
 # -----------------------------------------------------------------------------
 
-app.config['SECRET_KEY'] = os.urandom(24)
+# Load database configurations
 
-# database uri
-app.config["SQLALCHEMY_DATABASE_URI"] =\
-            f"postgresql://{username}:{password}@localhost:5432/{dbname}"
+load_dotenv(join(dirname(__file__), '.env'))
+
+# pick up from .env
+
+db_settings = {
+    'user': environ.get('DB_USER'),
+    'password': environ.get('DB_PASS'),
+    'host': environ.get("DB_HOST"),
+    'port': environ.get('DB_PORT'),
+    'dbname': environ.get("DB_NAME")
+}
+
+# database uri formation:
+
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://%s:%s@%s:%s/%s" % (
+    environ.get('DB_USER'),
+    environ.get('DB_PASS'),
+    environ.get('DB_HOST'),
+    environ.get('DB_PORT'),
+    environ.get('DB_NAME'))
+
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
@@ -46,8 +64,8 @@ cache = AchiveCache(app.config["GLOBAL_CACHE_BUFFER"])
 
 # support functionality
 
-def page_json(page_request) -> dict:
 
+def page_json(page_request) -> dict:
     """
     Making json from request, if there are repeating titles
     they extends by prefix (number)_copy
@@ -66,8 +84,8 @@ def page_json(page_request) -> dict:
 
     return data
 
-def request_query_builder(asin, page) -> dict:
 
+def request_query_builder(asin, page) -> dict:
     """
     Function builder of answer with pagination
     contains function which paginates in filtered query
@@ -76,21 +94,21 @@ def request_query_builder(asin, page) -> dict:
     product = Products.query.filter(Products.asin == asin).first()
 
     page_request = Reviews.query.filter(asin == Reviews.asin).\
-        paginate(page, 3).items
-     
-    #finalised product card for 
+        paginate(page, app.config["PAGINATION_PAGE_LIM"]).items
+
+    # finalised product card for
     data = {
-            'asin' : asin,
-            'product_title' : product.title,
-            str(page) : page_json(page_request),
-            'state' : True,
-            'date' : datetime.now()
-        }   
+        'asin': asin,
+        'product_title': product.title,
+        str(page): page_json(page_request),
+        'state': True,
+        'date': datetime.now()
+    }
 
     return data
 
-def checking_module(request) -> bool:
 
+def checking_module(request) -> bool:
     """
     Function provides all checks
     """
@@ -120,7 +138,7 @@ def checking_module(request) -> bool:
         return True
 
     if 'review' not in request.json or type(request.json['review']) != str or\
-            len(request.json['review']) > 10000 or request.json['review'] == '':
+            request.json['review'] == '' or len(request.json['review']) > 10000:
 
         # fail if no 'review' or it`s different from str
         # or lenth of review > 10000 or empty json field
@@ -133,14 +151,15 @@ def checking_module(request) -> bool:
 
 # Error handlers
 
+
 @app.errorhandler(404)
 def page_not_found(errorhandler):
 
     err = str(errorhandler).split(':')
     err_json = {
-        err[0]  :   err[1],
-        'state' :   False
-        }
+        err[0]: err[1],
+        'state': False
+    }
 
     return make_response(jsonify(err_json), 404)
 
@@ -149,6 +168,7 @@ def page_not_found(errorhandler):
 def method_not_allowed():
 
     return make_response(jsonify({'error': 'Method Not Allowed'}), 405)
+
 
 @app.errorhandler(406)
 def wrong_fields():
@@ -159,6 +179,7 @@ def wrong_fields():
 # -----------------------------------------------------------------------------
 
 # Database block
+
 
 class Products(db.Model):
 
@@ -196,28 +217,23 @@ class Reviews(db.Model):
 
     __tablename__ = 'reviews'
     id = db.Column(db.Integer(), primary_key=True)
-    asin = db.Column(db.String(10), db.ForeignKey('products.asin'), nullable=False)
+    asin = db.Column(
+        db.String(10),
+        db.ForeignKey('products.asin'),
+        nullable=False)
     title = db.Column(db.String(1000), nullable=False)
     review = db.Column(db.String(10000), nullable=False)
 
     def __repr__(self):
         return '<Reviews %r>' % self.asin
 
-    def to_json(self):
-        return {
-            'id': self.id,
-            'asin': self.asin,
-            'title': self.title,
-            'review': self.review
-        }
-
 # -----------------------------------------------------------------------------
 
 # Routes block
 
+
 @app.route('/todo/api/v1.1/<asin>/<int:page>', methods=['GET'])
 def index(asin, page):
-
     """
     Main route for GET request
     """
@@ -227,40 +243,41 @@ def index(asin, page):
     if cache.check_available(asin, page):
 
         data = cache.get_from_cache(asin, page)
-            
+
     else:
 
         data = request_query_builder(asin, page)
         cache.add_to_cache(asin, page, data)
-
 
     # removing service time field from responce
     final = dict(data)
     del final['date']
 
     return jsonify(final)
-        
 
-        
+
 @app.route('/todo/api/v1.1/reviewadd', methods=['PUT'])
 def put_review():
-
     """
     Route for review adding to database
     contains main check tests of availibility of fields json
     """
 
     if checking_module(request):
-       return wrong_fields()
+        return wrong_fields()
 
     # databae new object creating
 
-    new_review = Reviews(asin=request.json['asin'], title=request.json['title'],\
-            review=request.json['review'])
+    new_review = Reviews(
+        asin=request.json['asin'],
+        title=request.json['title'],
+        review=request.json['review']
+    )
 
     try:
 
         # wrote to db
+
         db.session.add(new_review)
         db.session.commit()
         cache.del_chain_asin(request.json['asin'])
@@ -268,9 +285,9 @@ def put_review():
         # Success answer
 
         return jsonify({
-            'Success' : True,
-            'For'     : request.json['asin']
-            })
+            'Success': True,
+            'For': request.json['asin']
+        })
 
     except Exception:
 
@@ -278,6 +295,8 @@ def put_review():
 
 # -----------------------------------------------------------------------------
 
+
 if __name__ == '__main__':
 
-    app.run(host = '127.0.0.1', debug=True, port = 1110) # ssl_context='adhoc')
+    app.run(host='127.0.0.1', debug=True, port=1110)
+    # ssl_context='adhoc')
